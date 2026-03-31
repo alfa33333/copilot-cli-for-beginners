@@ -26,6 +26,7 @@ safe-outputs:
     title-prefix: "[bot] "
     base-branch: main
     fallback-as-issue: false
+    protected-files: allowed
     allowed-files:
       - ".github/uvs.csv"
       - ".github/views.csv"
