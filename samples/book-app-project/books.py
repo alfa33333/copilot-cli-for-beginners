@@ -181,8 +181,9 @@ class BookCollection:
             >>> bc.find_book_by_title('dune').author
             'Frank Herbert'
         """
+        query = title.strip().casefold()
         for book in self.books:
-            if book.title.lower() == title.lower():
+            if book.title.strip().casefold() == query:
                 return book
         return None
 
@@ -212,30 +213,63 @@ class BookCollection:
             return True
         return False
 
-    def remove_book(self, title: str) -> bool:
+    def remove_book(self, title: str, *, return_info: bool = False):
         """Remove a book from the collection by title and persist the change.
 
         Parameters:
             title (str): The title of the book to remove (case-insensitive).
+            return_info (bool): When True, return a dict with details about the removal
+                or why no removal occurred. When False (default), maintain previous
+                behavior and return a boolean.
 
         Returns:
-            bool: True if a matching book was found and removed; False otherwise.
+            bool or dict: If return_info is False, returns True if removed else False.
+                If return_info is True, returns a dict with keys:
+                - 'removed' (bool)
+                - 'reason' (str): one of 'exact_match', 'partial_matches', 'word_matches', 'not_found'
+                - 'matches' (list): list of dicts with candidate book info when not removed
 
         Raises:
             OSError: If saving the updated collection to disk fails (propagated
                 from :meth:`save_books`).
-
-        Example:
-            >>> bc = BookCollection()
-            >>> bc.add_book('To Kill a Mockingbird', 'Harper Lee', 1960)
-            >>> bc.remove_book('to kill a mockingbird')
-            True
         """
-        book = self.find_book_by_title(title)
-        if book:
-            self.books.remove(book)
-            self.save_books()
-            return True
+        query = title.strip().casefold()
+
+        # Try exact match first
+        for book in self.books:
+            if book.title.strip().casefold() == query:
+                self.books.remove(book)
+                self.save_books()
+                if return_info:
+                    return {'removed': True, 'reason': 'exact_match', 'matches': []}
+                return True
+
+        # No exact match: look for partial matches (substring) and word overlap
+        substring_matches = [b for b in self.books if query in b.title.strip().casefold()]
+        if substring_matches:
+            reason = 'partial_matches'
+            matches = [{'title': b.title, 'author': b.author, 'year': b.year} for b in substring_matches]
+            if return_info:
+                return {'removed': False, 'reason': reason, 'matches': matches}
+            return False
+
+        # Word-overlap heuristic
+        q_words = set(query.split())
+        word_matches = []
+        for b in self.books:
+            b_words = set(b.title.strip().casefold().split())
+            if q_words & b_words:
+                word_matches.append(b)
+        if word_matches:
+            reason = 'word_matches'
+            matches = [{'title': b.title, 'author': b.author, 'year': b.year} for b in word_matches]
+            if return_info:
+                return {'removed': False, 'reason': reason, 'matches': matches}
+            return False
+
+        # No matches found
+        if return_info:
+            return {'removed': False, 'reason': 'not_found', 'matches': []}
         return False
 
     def find_by_author(self, author: str) -> List[Book]:
