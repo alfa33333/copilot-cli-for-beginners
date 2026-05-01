@@ -8,11 +8,19 @@ def print_menu():
 
 
 def get_user_choice() -> str:
-    return input("Choose an option (1-5): ").strip()
+    while True:
+        choice = input("Choose an option (1-5): ").strip()
+        if choice in ("1", "2", "3", "4", "5"):
+            return choice
+        print("Invalid choice. Please enter a number between 1 and 5.")
 
 
 def get_book_details():
-    title = input("Enter book title: ").strip()
+    while True:
+        title = input("Enter book title: ").strip()
+        if title:
+            break
+        print("Title cannot be empty. Please enter a title.")
     author = input("Enter author: ").strip()
 
     year_input = input("Enter publication year: ").strip()
