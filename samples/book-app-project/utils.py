@@ -1,3 +1,6 @@
+import logging
+logger = logging.getLogger(__name__)
+
 def print_menu():
     print("\n📚 Book Collection App")
     print("1. Add a book")
@@ -26,21 +29,26 @@ def get_book_details():
     """Prompt the user for book details and return them.
 
     This function interactively prompts the user for a book title, author, and
-    publication year. The title is required and the function will re-prompt
-    until a non-empty title is provided. The author may be left empty.
-    The publication year is converted to an integer; if conversion fails the
-    function prints a message and defaults the year to 0.
+    optional publication year. The title is required and the function will
+    re-prompt until a non-empty title is provided. The author may be left empty.
+
+    Important behavior:
+    - The publication year is optional. Blank or invalid year input is treated
+      as a legacy "unknown" value represented by the integer 0 for
+      compatibility with existing sample data and tests. In these cases the
+      function prints a short warning and returns 0 for the year.
 
     Parameters:
         None
 
     Returns:
         tuple[str, str, int]: A tuple of (title, author, year) where `title` and
-        `author` are strings and `year` is an int.
+        `author` are strings and `year` is an int. A year value of 0 indicates
+        an unknown/unspecified year (legacy representation).
 
     Side effects:
         Uses input() to read from stdin and prints messages to stdout when
-        re-prompting for the title or when the year input is invalid.
+        re-prompting for the title or when the year input is missing/invalid.
     """
     # Require a non-empty title; re-prompt until provided.
     while True:
@@ -50,12 +58,18 @@ def get_book_details():
         print("Title cannot be empty. Please enter a title.")
     author = input("Enter author: ").strip()
 
-    year_input = input("Enter publication year: ").strip()
-    try:
-        year = int(year_input)
-    except ValueError:
-        print("Invalid year. Defaulting to 0.")
+    # Prompt for optional publication year; treat blank or invalid input as legacy 0.
+    year_input = input("Enter publication year (optional): ").strip()
+    if year_input == "":
+        # Blank year treated as legacy 0 for compatibility with sample data/tests
+        print("Invalid year. Enter digits only, or press Enter to leave blank.")
         year = 0
+    else:
+        try:
+            year = int(year_input)
+        except ValueError:
+            print("Invalid year. Enter digits only, or press Enter to leave blank.")
+            year = 0
 
     return title, author, year
 
@@ -68,4 +82,5 @@ def print_books(books):
     print("\nYour Books:")
     for index, book in enumerate(books, start=1):
         status = "✅ Read" if book.read else "📖 Unread"
-        print(f"{index}. {book.title} by {book.author} ({book.year}) - {status}")
+        year = str(book.year) if getattr(book, "year", None) is not None else "Unknown"
+        print(f"{index}. {book.title} by {book.author} ({year}) - {status}")

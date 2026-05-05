@@ -1,7 +1,22 @@
+"""books.py — Book collection helpers used in course samples.
+
+This module provides a lightweight Book dataclass and a BookCollection
+class that manages an in-memory list of books persisted to a JSON file
+(see DATA_FILE). The code is intentionally simple for teaching purposes.
+
+Example:
+    from samples.book_app_project.books import BookCollection
+
+    bc = BookCollection()
+    bc.add_book("Dune", "Frank Herbert", 1965)
+"""
 import json
+import logging
 from dataclasses import dataclass, asdict
 from typing import List, Optional
 from contextlib import contextmanager
+
+logger = logging.getLogger(__name__)
 
 DATA_FILE = "data.json"
 
@@ -13,7 +28,7 @@ class Book:
     Attributes:
         title (str): The book title.
         author (str): The author name.
-        year (int): Publication year.
+        year (Optional[int]): Publication year (may be None if unknown).
         read (bool): Whether the book has been read. Defaults to False.
 
     Example:
@@ -23,11 +38,23 @@ class Book:
     """
     title: str
     author: str
-    year: int
+    year: Optional[int] = None
     read: bool = False
 
 
 class BookCollection:
+    """Manage a collection of Book objects persisted to a JSON data file.
+
+    The BookCollection class provides methods to load and save the collection,
+    add/remove books, search by title, author, and year, and mark books as read.
+    File I/O errors during save are propagated to callers; missing files are
+    handled by initializing an empty collection. Corrupted JSON content is logged.
+
+    Example:
+        bc = BookCollection()
+        bc.add_book("1984", "George Orwell", 1949)
+    """
+
     def __init__(self):
         """Initialize a BookCollection.
 
@@ -123,13 +150,13 @@ class BookCollection:
         with self._open_data_file("w") as f:
             json.dump([asdict(b) for b in self.books], f, indent=2)
 
-    def add_book(self, title: str, author: str, year: int) -> Book:
+    def add_book(self, title: str, author: str, year: Optional[int] = None) -> Book:
         """Add a new book to the collection and persist it to disk.
 
         Parameters:
             title (str): The title of the book.
             author (str): The author of the book.
-            year (int): The publication year.
+            year (Optional[int]): The publication year, or None if unknown.
 
         Returns:
             Book: The :class:`Book` instance that was created and appended to the collection.
@@ -290,3 +317,41 @@ class BookCollection:
             2
         """
         return [b for b in self.books if b.author.lower() == author.lower()]
+
+    def find_by_year(self, start: Optional[int], end: Optional[int]) -> List[Book]:
+        """Return books with known publication years between start and end (inclusive).
+
+        Treats None and 0 as unknown years and excludes them from results.
+
+        Parameters:
+            start (Optional[int]): Inclusive lower bound year, or None for unbounded.
+            end (Optional[int]): Inclusive upper bound year, or None for unbounded.
+
+        Returns:
+            List[Book]: Books whose publication year satisfies the inclusive range.
+
+        Raises:
+            ValueError: If both start and end are provided and start > end.
+
+        Example:
+            >>> bc = BookCollection()
+            >>> bc.add_book('Old', 'A', 1950)
+            >>> bc.add_book('New', 'B', 2000)
+            >>> bc.find_by_year(1900, 1999)  # doctest: +ELLIPSIS
+            [Book(...)]
+        """
+        if start is not None and end is not None and start > end:
+            raise ValueError("start year must be <= end year")
+
+        results: List[Book] = []
+        for b in self.books:
+            y = b.year
+            if y is None or y == 0:
+                continue
+            if start is not None and y < start:
+                continue
+            if end is not None and y > end:
+                continue
+            results.append(b)
+        return results
+
