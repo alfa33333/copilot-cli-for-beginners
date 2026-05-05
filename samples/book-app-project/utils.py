@@ -13,6 +13,7 @@ def print_menu():
 def get_user_choice() -> str:
     while True:
         choice = input("Choose an option (1-5): ").strip()
+<<<<<<< HEAD
         if not choice:
             print("Please enter a choice (1-5).")
             continue
@@ -51,6 +52,14 @@ def get_book_details():
         re-prompting for the title or when the year input is missing/invalid.
     """
     # Require a non-empty title; re-prompt until provided.
+=======
+        if choice in ("1", "2", "3", "4", "5"):
+            return choice
+        print("Invalid choice. Please enter a number between 1 and 5.")
+
+
+def get_book_details():
+>>>>>>> origin/main
     while True:
         title = input("Enter book title: ").strip()
         if title:
