@@ -17,7 +17,7 @@ def get_user_choice() -> str:
             print("Please enter a choice (1-5).")
             continue
         if not choice.isdigit():
-            print("Invalid input. Please enter a number between 1 and 5.")
+            print("Invalid choice. Please enter a number between 1 and 5.")
             continue
         num = int(choice)
         if 1 <= num <= 5:
@@ -82,5 +82,5 @@ def print_books(books):
     print("\nYour Books:")
     for index, book in enumerate(books, start=1):
         status = "✅ Read" if book.read else "📖 Unread"
-        year = str(book.year) if getattr(book, "year", None) is not None else "Unknown"
+        year = str(book.year) if getattr(book, "year", None) not in (None, 0) else "Unknown"
         print(f"{index}. {book.title} by {book.author} ({year}) - {status}")

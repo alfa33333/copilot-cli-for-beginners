@@ -102,3 +102,19 @@ def test_get_book_details_title_whitespace_only_reprompt(monkeypatch, capsys):
     assert title == "Real Title"
     assert author == "Auth"
     assert year == 2020
+
+
+def test_get_user_choice_valid(monkeypatch):
+    for choice in ["1", "2", "3", "4", "5"]:
+        monkeypatch.setattr(builtins, "input", lambda prompt='': choice)
+        result = utils.get_user_choice()
+        assert result == choice
+
+
+def test_get_user_choice_invalid_then_valid(monkeypatch, capsys):
+    inputs = iter(["0", "6", "abc", "3"])
+    monkeypatch.setattr(builtins, "input", lambda prompt='': next(inputs))
+    result = utils.get_user_choice()
+    captured = capsys.readouterr()
+    assert result == "3"
+    assert "Invalid choice" in captured.out or "Invalid input" in captured.out or "Choice out of range" in captured.out
